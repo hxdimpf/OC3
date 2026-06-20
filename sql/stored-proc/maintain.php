@@ -7,7 +7,8 @@
  *  Load current stored procs and triggers into database.
  ***************************************************************************/
 
-$opt['rootpath'] = __DIR__ . '/../../htdocs/';
+$opt['rootpath'] = __DIR__ . '/../../';
+// NOTE: htdocs/ prefix removed — OC3 repo root IS the old htdocs directory
 require $opt['rootpath'] . 'lib2/cli.inc.php';
 
 if ($opt['db']['maintenance_user'] == '') {
