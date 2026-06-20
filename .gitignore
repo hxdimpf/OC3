@@ -1,0 +1,35 @@
+# Dependencies
+/vendor/
+
+# Generated / cache
+/var/
+/cache2/
+/web/
+/download/
+/images/statpics/
+/images/uploads/
+/sitemap.xml*
+
+# Environment configs (local overrides)
+/config2/settings.inc.php
+/config2/settings-common.inc.php
+/config2/settings-dev.inc.php
+/lib/settings.inc.php
+/app/config/parameters.yml
+/util/notification/settings.inc.php
+/util/publish_caches/settings.inc.php
+/util/watchlist/settings.inc.php
+
+# Dev tools
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+
+# Working docs
+*.md
+!/README.md
+!/LICENSE.md
+
+# Backups
+/*.sql.gz

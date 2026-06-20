@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% set page_title = '' %}
+{% set page_title_image = "" %}
+
+{% block body %}
+    {% for block in pageStruct.blockEntities %}
+        <div id="block-{{ block.id}}" class="ctl__page">
+            <a class="anchorjs-link " href="#block-{{ block.id}}" aria-label="Anchor" data-anchorjs-icon="#" style="padding-left: 0.375em;"></a>
+            <div class="page__block-title">
+                {{ block.title|raw}}
+            </div>
+            <div class="page__block-html">
+                {{ block.html|raw }}
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

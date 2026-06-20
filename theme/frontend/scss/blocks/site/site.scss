@@ -1,0 +1,14 @@
+@import '../../global';
+
+.site {
+    &__inner {
+        &-sidebar {
+            @extend %fixed-left;
+            width: $sidebar---width;
+        }
+
+        &-main {
+            margin-left: $sidebar---width;
+        }
+    }
+}

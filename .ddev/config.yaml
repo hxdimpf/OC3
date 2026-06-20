@@ -1,0 +1,18 @@
+name: oc3
+type: php
+docroot: htdocs/
+php_version: "8.2"
+webserver_type: apache-fpm
+xdebug_enabled: false
+database:
+    type: mariadb
+    version: "10.11"
+use_dns_when_possible: true
+composer_version: "2"
+hooks:
+  post-start:
+    - exec: cp htdocs/app/config/parameters.yml.dist htdocs/app/config/parameters.yml
+    - exec: cp htdocs/config2/settings-sample-dev.inc.php htdocs/config2/settings.inc.php
+    - exec: composer install --no-interaction --no-dev -d htdocs
+    - exec: "mysql db < /mnt/ddev_config/db-patches/sp_update_logstat.sql"
+      service: db

@@ -1,0 +1,96 @@
+imports:
+    - { resource: parameters.yml }
+    - { resource: security.yml }
+    - { resource: services.xml }
+
+parameters:
+    locale: de
+
+framework:
+    #esi:             ~
+    translator:      { fallbacks: ["en"] }
+    secret:          "%secret%"
+    router:
+        resource: "%kernel.root_dir%/config/routing.yml"
+        strict_requirements: ~
+    form:            ~
+    csrf_protection: ~
+    validation:      { enable_annotations: true }
+    #serializer:      { enable_annotations: true }
+    templating:
+        engines: ['twig']
+    default_locale:  "%locale%"
+    trusted_hosts:   ~
+    session:
+        storage_id: session.storage.native
+        # http://symfony.com/doc/current/reference/configuration/framework.html#handler-id
+        #handler_id:  session.handler.native_file
+        #save_path:   "%kernel.root_dir%/../var/sessions/%kernel.environment%"
+        handler_id: ~
+    fragments:       ~
+    http_method_override: true
+    assets:
+        base_path: 'web'
+
+# Twig Configuration
+twig:
+    debug:            "%kernel.debug%"
+    strict_variables: "%kernel.debug%"
+    paths: ["%kernel.project_dir%/theme/frontend/views"]
+
+# Doctrine Configuration
+doctrine:
+    dbal:
+        driver:   pdo_mysql
+        host:     "%database_host%"
+        port:     "%database_port%"
+        dbname:   "%database_name%"
+        user:     "%database_user%"
+        password: "%database_password%"
+        charset:  UTF8
+
+    orm:
+        auto_generate_proxy_classes: "%kernel.debug%"
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        auto_mapping: true
+        # Mapping is currently for the doctrine entities in the Oc namespace.
+        # Will be removed with my upcoming refactoring of field-notes.
+        mappings:
+            Oc:
+                type: annotation
+                prefix: Oc\
+                dir: '%kernel.project_dir%/src/Oc/'
+                is_bundle: false
+        dql:
+            string_functions:
+                ifelse: DoctrineExtensions\Query\Mysql\IfElse
+
+doctrine_migrations:
+    migrations_paths:
+        'DoctrineMigrations': '%kernel.root_dir%/Migrations'
+    storage:
+        table_storage:
+            table_name: 'migration_versions'
+            version_column_name: 'version'
+            version_column_length: 191
+            executed_at_column_name: 'executed_at'
+            execution_time_column_name: 'execution_time'
+
+# Swiftmailer Configuration
+swiftmailer:
+    transport: "%mailer_transport%"
+    host:      "%mailer_host%"
+    port:      "%mailer_port%"
+    username:  "%mailer_user%"
+    password:  "%mailer_password%"
+    spool:     { type: memory }
+
+jms_translation:
+    configs:
+        app:
+            output_format: yml
+            dirs: ["%kernel.root_dir%", "%kernel.root_dir%/../src"]
+            output_dir: "%kernel.root_dir%/Resources/translations"
+            ignored_domains: [routes]
+            excluded_names: ["*TestCase.php", "*Test.php"]
+            excluded_dirs: [cache, data, logs]

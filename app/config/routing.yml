@@ -1,0 +1,4 @@
+oc:
+    resource: "../../src/Oc/"
+    type:     annotation
+

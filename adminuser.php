@@ -1,0 +1,202 @@
+<?php
+/***************************************************************************
+ * for license information see LICENSE.md
+ ***************************************************************************/
+
+use Doctrine\DBAL\Connection;
+use OcLegacy\Admin\Gdpr\GdprHandler;
+
+require __DIR__ . '/lib2/web.inc.php';
+
+$tpl->name = 'adminuser';
+$tpl->menuitem = MNU_ADMIN_USER;
+
+$login->verify();
+if ($login->userid == 0) {
+    $tpl->redirect_login();
+}
+
+if (($login->admin & ADMIN_USER) != ADMIN_USER) {
+    $tpl->error(ERROR_NO_ACCESS);
+}
+
+if (isset($_REQUEST['success']) && $_REQUEST['success']) {
+    $tpl->assign('success', '1');
+}
+
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'display';
+
+if ($action === 'searchuser') {
+    searchUser();
+} elseif ($action === 'gdpr-deletion') {
+    gdprDeletion();
+} elseif ($action === 'sendcode') {
+    sendCode();
+} elseif ($action === 'formaction') {
+    formAction();
+} elseif ($action === 'display') {
+    $tpl->display();
+}
+
+$tpl->error(ERROR_UNKNOWN);
+
+function gdprDeletion() {
+    global $tpl;
+
+    $userId = (int)($_REQUEST['userid'] ?? 0);
+    $execute = isset($_POST['execute']);
+
+    $user = new user($userId);
+    if ($user->exist() === false) {
+        $tpl->error(ERROR_UNKNOWN);
+    }
+
+    $gdprHandler = AppKernel::Container()->get(GdprHandler::class);
+    $tpl->assign($gdprHandler->handle($user, $execute));
+
+    $tpl->assign('showGdprDeletion', true);
+    $tpl->display();
+}
+
+function sendCode()
+{
+    global $tpl;
+
+    $userId = (int)($_REQUEST['userid'] ?? 0);
+
+    $user = new user($userId);
+    if ($user->exist() === false) {
+        $tpl->error(ERROR_UNKNOWN);
+    }
+
+    // send a new confirmation
+    $user->sendRegistrationCode();
+
+    $tpl->redirect('adminuser.php?action=searchuser&msg=sendcodecommit&username=' . urlencode($user->getUsername()));
+}
+
+function formAction()
+{
+    global $tpl, $translate;
+
+    $commit = (int)($_REQUEST['chkcommit'] ?? 0);
+    $delete = (int)($_REQUEST['chkdelete'] ?? 0);
+    $deleteGdpr = (int)($_REQUEST['chkdeletegdpr'] ?? 0);
+    $disable = (int)($_REQUEST['chkdisable'] ?? 0);
+    $emailProblem = (int)($_REQUEST['chkemail'] ?? 0);
+    $dataLicense = isset($_REQUEST['chkdl']) ? true : false;
+    $userId = (int)($_REQUEST['userid'] ?? 0);
+    $disduelicense = (int)($_REQUEST['chkdisduelicense'] ?? 0);
+
+    $user = new user($userId);
+    if ($user->exist() === false) {
+        $tpl->error(ERROR_UNKNOWN);
+    }
+    $username = $user->getUsername();
+
+    if ($delete + $disable + $disduelicense + $deleteGdpr > 1) {
+        $tpl->error($translate->t('Please select only one of the delete/disable options!', '', '', 0));
+    }
+
+    if ($commit == 0) {
+        $tpl->error($translate->t('You have to check that you are sure!', '', '', 0));
+    }
+
+    if ($disduelicense == 1) {
+        $errorMessage = $user->disduelicense();
+        if ($errorMessage !== true) {
+            $tpl->error($errorMessage);
+        }
+    } elseif ($disable == 1) {
+        if ($user->disable() == false) {
+            $tpl->error(ERROR_UNKNOWN);
+        }
+    } elseif ($delete == 1) {
+        if ($user->delete() == false) {
+            $tpl->error(ERROR_UNKNOWN);
+        }
+    } elseif ($deleteGdpr == 1) {
+        $tpl->redirect('adminuser.php?action=gdpr-deletion&userid=' . $userId);
+    } elseif ($emailProblem == 1) {
+        $user->addEmailProblem($dataLicense);
+    }
+
+    $tpl->redirect('adminuser.php?action=searchuser&username=' . urlencode($username) .
+        '&success=' . ($disduelicense + $disable));
+}
+
+function searchUser()
+{
+    global $tpl, $opt;
+
+    $username = isset($_REQUEST['username']) ? $_REQUEST['username'] : '';
+    $msg = isset($_REQUEST['msg']) ? $_REQUEST['msg'] : '';
+
+    $tpl->assign('username', $username);
+    $tpl->assign('msg', $msg);
+
+    /** @var Connection $connection */
+    $connection = AppKernel::Container()->get(Connection::class);
+    $r = $connection->fetchAssociative(
+        'SELECT `user_id`,
+                `username`,
+                `email`,
+                `email_problems`,
+                `date_created`,
+                `last_modified`,
+                `is_active_flag`,
+                `activation_code`,
+                `first_name`,
+                `last_name`,
+                `last_login`,
+                `data_license`=:dataLicense AS `license_declined`
+         FROM `user`
+         WHERE `username`= :user
+         OR `email`=:user',
+        [
+            'user' => $username,
+            'dataLicense' => NEW_DATA_LICENSE_ACTIVELY_DECLINED
+        ]
+    );
+
+    if (!$r) {
+        $tpl->assign('error', 'userunknown');
+        $tpl->display();
+    }
+
+    $tpl->assign('showdetails', true);
+
+    $r['hidden'] = (int) $connection->fetchOne(
+        'SELECT COUNT(*) FROM `caches` WHERE `user_id`=:userId', ['userId' => $r['user_id']]
+    );
+    $r['hidden_active'] = (int) $connection->fetchOne(
+        'SELECT COUNT(*) FROM `caches` WHERE `user_id`= :userId AND `status`=1',
+        ['userId' => $r['user_id']]
+    );
+    $r['logentries'] = (int) $connection->fetchOne(
+        'SELECT COUNT(*) FROM `cache_logs` WHERE `user_id`= :userId',
+        ['userId' => $r['user_id']]
+    );
+    $r['deleted_logentries'] = (int) $connection->fetchOne(
+        'SELECT COUNT(*) FROM `cache_logs_archived` WHERE `user_id`= :userId',
+        ['userId' => $r['user_id']]
+    );
+    $r['reports'] = (int) $connection->fetchOne(
+        'SELECT COUNT(*) FROM `cache_reports` WHERE `userid`= :userId',
+        ['userId' => $r['user_id']]
+    );
+
+    $tpl->assign('user', $r);
+
+    $user = new user($r['user_id']);
+    if (!$user->exist()) {
+        $tpl->error(ERROR_UNKNOWN);
+    }
+    $tpl->assign('candisable', $user->canDisable());
+    $tpl->assign('candelete', $user->canDelete());
+    $tpl->assign('cangdprdelete', $user->canGdprDelete());
+    $tpl->assign('cansetemail', !$user->missedDataLicenseMail() && $r['email'] != "");
+    $tpl->assign('licensefunctions', $opt['logic']['license']['admin']);
+
+    $tpl->display();
+}

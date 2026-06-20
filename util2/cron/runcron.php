@@ -1,0 +1,93 @@
+#!/usr/bin/php -q
+<?php
+/***************************************************************************
+ * For license information see LICENSE.md
+ *
+ * create a cronjob to execute this file every minute
+ *
+ * DO NOT RUN THIS JOB AS ROOT!
+ *
+ ***************************************************************************/
+
+use Oc\Util\ProcessSync;
+
+$opt['rootpath'] = __DIR__ . '/../../';
+require __DIR__ . '/../../lib2/cli.inc.php';
+
+if (!Cronjobs::enabled()) {
+    exit;
+}
+
+// test for user who runs the cronjob
+$processUser = posix_getpwuid(posix_geteuid());
+
+if ($processUser['name'] !== $opt['cron']['username']) {
+    die(
+        "ERROR: runcron must be run by '" . $opt['cron']['username']
+        . "' but was called by '" . $processUser['name'] . "'\n" .
+        "Try something like 'sudo -u " . $opt['cron']['username'] . " php runcron.php'.\n"
+    );
+}
+
+// ensure that we do not run concurrently
+$processSync = new ProcessSync('runcron');
+if ($processSync->enter()) {
+    // Run as system user, if possible.
+    // This is relevant e.g. for publishing and for auto-archiving caches.
+    if ($opt['logic']['systemuser']['user'] != '') {
+        if (!$login->system_login($opt['logic']['systemuser']['user'])) {
+            die('ERROR: runcron system user login failed');
+        }
+    }
+
+    $modules_dir = __DIR__ . '/../../util2/cron/modules/';
+    $param = count($argv) > 1 ? $argv[1] : '';
+
+    if ($param !== '' && substr($param, 0, 1) !== '-' && !strstr('/', $param)) {
+        // run one job manually for debugging purpose
+        $ignore_interval = true;
+        require $modules_dir . $argv[1] . '.class.php';
+    } else {
+        $ignore_interval = false;
+        $hDir = opendir($modules_dir);
+        while (false !== ($file = readdir($hDir))) {
+            if (substr($file, -10) == '.class.php') {
+                if ($param == '--show') {
+                    echo 'running ' . $file . "\n";
+                }
+                require $modules_dir . $file;
+            }
+        }
+    }
+
+    $processSync->leave();
+}
+
+
+function checkJob(&$job): void
+{
+    global $ignore_interval;
+
+    $max_last_run = date(DB_DATE_FORMAT_NEW, time() - ($ignore_interval ? 0 : $job->interval));
+    $count = sqll_value(
+        "SELECT COUNT(*)
+         FROM `sys_cron`
+         WHERE
+            `name` = '&1'
+            AND `last_run` > '&2'
+            AND `last_run` <= NOW()",
+        0,
+        $job->name,
+        $max_last_run
+    );
+
+    if ($count !== '1') {
+        $job->run();
+        sqll(
+            "INSERT INTO `sys_cron` (`name`, `last_run`)
+             VALUES ('&1', NOW())
+             ON DUPLICATE KEY UPDATE `last_run` = NOW()",
+            $job->name
+        );
+    }
+}
