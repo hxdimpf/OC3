@@ -85,7 +85,7 @@ class SessionDataCookie implements SessionDataInterface
     {
         global $opt;
 
-        if ($this->changed === true) {
+        if ($this->changed === true && count($this->values) > 1) {
             $value = false;
             if (count($this->values) > 0) {
                 $value = base64_encode(json_encode($this->values));
