@@ -31,7 +31,7 @@ $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : ''; // Ocprop
 
 if ($action === 'cookieverify') {
     // we should be logged in ... check if cookie is set ...
-    if (!isset($_COOKIE[$opt['session']['cookiename'] . 'data'])) {
+    if (!isset($_COOKIE[$opt['session']['cookiename'] . '_session'])) {
         $tpl->error(ERROR_NO_COOKIES);
     } else {
         $tpl->redirect($target);

@@ -49,7 +49,7 @@ function get_okapi_settings()
         'IMAGE_MAX_PIXEL_COUNT' => 786432, # 1024 x 768; TODO: move PICTURE_MAX_LONG_SIDE to settings
         'SITE_LOGO'        => $opt['page']['absolute_url'] . 'resource2/' . $opt['template']['default']['style'] . '/images/oclogo/oc_logo_alpha3.png',
         'OC_NODE_ID'       => $opt['logic']['node']['id'],
-        'OC_COOKIE_NAME'   => $opt['session']['cookiename'] . 'data',
+        'OC_COOKIE_NAME'   => $opt['session']['cookiename'] . '_session',
         'VERSION_FILE'     => __DIR__ . '/okapi/meta.php',
         'OCDE_HTML_PURIFIER_SETTINGS'
                            => $opt['html_purifier'],

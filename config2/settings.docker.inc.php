@@ -62,7 +62,7 @@ $opt['lib']['w3w']['apikey'] = 'X27PDW41';
  *
  * other parameters may be customized
  */
-$opt['session']['cookiename'] = 'ocdevelopment'; // only with SAVE_COOKIE
+$opt['session']['cookiename'] = 'oc3'; // only with SAVE_COOKIE
 $opt['session']['path'] = '/';
 $opt['session']['domain'] = '.oc3.baiti.net';    // may be overwritten by $opt['domain'][...]['cookiedomain']
 $opt['debug'] = true;

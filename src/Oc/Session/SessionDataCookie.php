@@ -23,9 +23,9 @@ class SessionDataCookie implements SessionDataInterface
     {
         global $opt;
 
-        if (isset($_COOKIE[$opt['session']['cookiename'] . 'data'])) {
+        if (isset($_COOKIE[$opt['session']['cookiename'] . '_session'])) {
             //get the cookie_vars-array
-            $decoded = base64_decode($_COOKIE[$opt['session']['cookiename'] . 'data'], true);
+            $decoded = base64_decode($_COOKIE[$opt['session']['cookiename'] . '_session'], true);
 
             if ($decoded !== false) {
                 $this->values = @json_decode($decoded, true);
@@ -97,7 +97,7 @@ class SessionDataCookie implements SessionDataInterface
                 && !empty($this->get('sessionid'));
 
             setcookie(
-                $opt['session']['cookiename'] . 'data',
+                $opt['session']['cookiename'] . '_session',
                 $value,
                 time() + 365 * 24 * 60 * 60,
                 $opt['session']['path'] ?? '/',
@@ -123,7 +123,7 @@ class SessionDataCookie implements SessionDataInterface
         global $opt;
 
         setcookie(
-            $opt['session']['cookiename'] . 'data',
+            $opt['session']['cookiename'] . '_session',
             '',
             time() - 1
         );
