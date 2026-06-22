@@ -55,6 +55,8 @@ if ($action === 'cookieverify') {
     $retval = $login->try_login($username, $password, null);
     $password = '';
     if ($retval == LOGIN_OK) {
+        global $cookie;
+        $cookie->header();
         $tpl->redirect($target);
     }
 
